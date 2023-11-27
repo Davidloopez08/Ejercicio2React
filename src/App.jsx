@@ -26,34 +26,37 @@ const App = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [quantity, setQuantity] = useState(10); // Default quantity of users to fetch
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const response = await fetch('https://randomuser.me/api/?nat=es&results=10');
-        const data = await response.json();
-        const processedUsers = data.results.map((user) => {
-          const userWithoutImage = {
-            name: user.name.first,
-            surname: user.name.last,
-            username: user.login.username,
-            gender: user.gender,
-            email: user.email,
-          };
-          userWithoutImage.image = getImageURL(user);
-          return userWithoutImage;
-        });
-        setUsers(processedUsers);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        setError(true);
-        setLoading(false);
-      }
-    };
-
     fetchUsers();
-  }, []);
+  }, [quantity]);
+
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`https://randomuser.me/api/?nat=es&results=${quantity}`);
+      const data = await response.json();
+      const processedUsers = data.results.map((user) => {
+        const userWithoutImage = {
+          name: user.name.first,
+          surname: user.name.last,
+          username: user.login.username,
+          gender: user.gender,
+          email: user.email,
+        };
+        userWithoutImage.image = getImageURL(user);
+        return userWithoutImage;
+      });
+      setUsers(processedUsers);
+      setLoading(false);
+      setError(false); // Reset error state
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setError(true);
+      setLoading(false);
+    }
+  };
 
   const getRandomInt = (max) => Math.floor(Math.random() * max);
 
@@ -62,20 +65,36 @@ const App = () => {
       user.gender === 'female' ? 'women' : 'men'
     }/${getRandomInt(100)}.jpg`;
 
-  if (loading) {
-    return <Loading>Loading...</Loading>;
-  }
+  const handleReload = () => {
+    setUsers([]);
+    fetchUsers();
+  };
 
-  if (error) {
-    return <ErrorMsg>Error loading data</ErrorMsg>;
-  }
+  const handleSelectChange = (event) => {
+    setQuantity(parseInt(event.target.value));
+  };
 
   return (
-    <GridLayout>
-      {users.map((user, index) => (
-        <UserData key={index} user={user} />
-      ))}
-    </GridLayout>
+    <div>
+      <div style={{ marginBottom: '20px' }}>
+        <select value={quantity} onChange={handleSelectChange} disabled={loading}>
+          <option value={5}>5</option>
+          <option value={10}>10</option>
+          <option value={15}>15</option>
+          <option value={20}>20</option>
+        </select>
+        <button onClick={handleReload} disabled={loading}>
+          Reload
+        </button>
+      </div>
+      {loading && <Loading>Loading...</Loading>}
+      {error && <ErrorMsg>Error loading data</ErrorMsg>}
+      <GridLayout>
+        {users.map((user, index) => (
+          <UserData key={index} user={user} />
+        ))}
+      </GridLayout>
+    </div>
   );
 };
 
